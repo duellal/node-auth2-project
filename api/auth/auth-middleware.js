@@ -18,28 +18,28 @@ const restricted = (req, res, next) => {
 
     Put the decoded token in the req object, to make life easier for middlewares downstream!
   */
-    const token = req.header.authorization
+    const token = req.headers.authorization
 
-    if(token){
-      jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if(err){
-          next({
-            status: 401, 
-            message: `Token invalid`
-          })
-        }
-        else{
-          req.decodedJwt = decoded
-          next()
-        }
-      })
-    }
-    else{
+    if(!token || token === undefined){
       next({
         status: 401,
         message: `Token required`
       })
     }
+    else{
+      jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if(err){
+        next({
+          status: 401, 
+          message: `Token invalid`
+        })
+      }
+      else{
+        req.decodedJwt = decoded
+        next()
+      }
+    })
+  }
 }
 
 const only = role_name => (req, res, next) => {
@@ -111,27 +111,26 @@ const validateRoleName = (req, res, next) => {
     }
   */
     let {role_name} = req.body
-    role_name = role_name.trim()
 
-    if(!role_name || role_name.length === 0){
-      req.role_name = `student`
-
+    if(role_name === undefined || role_name.trim().length === 0){
+      req.body.role_name = `student`
       next()
     }
-    else if(role_name === `admin`){
+    else if(role_name.trim() === `admin`){
       next({
         status: 422, 
         message: `Role name can not be admin`
       })
     }
-    else if(role_name.length > 32){
+    else if(role_name.trim().length > 32){
       next({
         status: 422, 
         message: `Role name can not be longer than 32 chars`
       })
+    } else{
+      req.body.role_name = role_name.trim()
+      next()
     }
-    
-    next()
 }
 
 module.exports = {
